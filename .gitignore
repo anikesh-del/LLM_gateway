@@ -1,0 +1,29 @@
+# Environment variables and secrets (NEVER COMMIT)
+.env
+*.env
+!.env.example
+
+# Build artifacts
+target/
+*.class
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Virtual machines and logs
+*.log
+
+# IDE and Editor configurations
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
