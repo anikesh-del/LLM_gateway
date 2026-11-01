@@ -136,6 +136,10 @@ public class ChatCompletionController {
         } else {
             // Provider returned 4xx/5xx: release hold and record failed status
             budgetService.releaseReservation(keyId, estimate.estimatedCostInr());
+            String providerUsed = response.getHeaders().getFirst(LlmProviderService.PROVIDER_USED_HEADER);
+            if (providerUsed == null || providerUsed.isBlank()) {
+                providerUsed = "primary";
+            }
             try {
                 UsageLog failureLog = new UsageLog(
                         apiKey,
@@ -143,7 +147,7 @@ public class ChatCompletionController {
                         0,
                         0,
                         BigDecimal.ZERO,
-                        "primary",
+                        providerUsed,
                         "FAILED"
                 );
                 usageLogRepository.save(failureLog);

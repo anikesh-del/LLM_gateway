@@ -33,15 +33,18 @@ gateway:
     fallback:
       base-url: ${FALLBACK_PROVIDER_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
       api-key: ${FALLBACK_PROVIDER_API_KEY:}
-      model: ${FALLBACK_MODEL:gemini-1.5-flash}
+      model: ${FALLBACK_MODEL:gemini-3.5-flash-lite}
   budget:
     usd-to-inr: ${USD_INR:84.00}
     default-max-tokens: ${DEFAULT_MAX_TOKENS:512}
     max-tokens-ceiling: ${MAX_TOKENS_CEILING:4096}
-    primary-model: ${PRIMARY_MODEL:llama-3.1-8b-instant}
-    fallback-model: ${FALLBACK_MODEL:gemini-1.5-flash}
+    primary-model: ${PRIMARY_MODEL:openai/gpt-oss-20b}
+    fallback-model: ${FALLBACK_MODEL:gemini-3.5-flash-lite}
   pricing:
     models:
+      gemini-3.5-flash-lite:
+        input-per-million-usd: 0.075
+        output-per-million-usd: 0.30
       llama-3.1-8b-instant:
         input-per-million-usd: 0.05
         output-per-million-usd: 0.08
