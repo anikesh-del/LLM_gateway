@@ -72,9 +72,10 @@ public class LlmProviderService {
         factory.setReadTimeout(Duration.ofMillis(readTimeoutMs));
 
         String normalized = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String completionUrl = normalized.endsWith("/chat/completions") ? normalized : normalized + "/chat/completions";
 
         return builder
-                .baseUrl(normalized)
+                .baseUrl(completionUrl)
                 .requestFactory(factory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -129,7 +130,6 @@ public class LlmProviderService {
     private ResponseEntity<String> dispatch(RestClient client, String body, String providerLabel) {
         try {
             ResponseEntity<String> resp = client.post()
-                    .uri("/chat/completions")
                     .body(body)
                     .retrieve()
                     .toEntity(String.class);

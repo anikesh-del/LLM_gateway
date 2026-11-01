@@ -23,8 +23,8 @@ class LlmProviderServiceTest {
 
     @BeforeEach
     void setUp() {
-        RestClient.Builder primaryBuilder = RestClient.builder().baseUrl("https://api.groq.com/openai/v1");
-        RestClient.Builder fallbackBuilder = RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta/openai");
+        RestClient.Builder primaryBuilder = RestClient.builder().baseUrl("https://api.groq.com/openai/v1/chat/completions");
+        RestClient.Builder fallbackBuilder = RestClient.builder().baseUrl("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions");
 
         mockPrimaryServer = MockRestServiceServer.bindTo(primaryBuilder).build();
         mockFallbackServer = MockRestServiceServer.bindTo(fallbackBuilder).build();

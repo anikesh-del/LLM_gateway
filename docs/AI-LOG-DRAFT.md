@@ -211,3 +211,5 @@ Working log documenting AI interactions, prompts, corrections, overrides, and en
 - Inspected `render.yaml`: verified health check path is set to `/health`.
 
 - **Docker Build Fix (Exit Code 127)**: Resolved `exit code: 127` during Docker build caused by Windows CRLF line endings on `mvnw` and missing `curl`/`unzip` packages in raw Alpine images by switching the builder stage to `maven:3.9.9-eclipse-temurin-21-alpine`. This executes pre-installed Maven directly without wrapper overhead while keeping the runtime image minimal (`eclipse-temurin:21-jre-alpine`).
+
+- **Upstream URI Resolution Bug (404 Not Found)**: Diagnosed 404 error on `/v1/chat/completions`. When `RestClient` baseUrl was `https://api.groq.com/openai/v1` and `.uri("/chat/completions")` had a leading slash, RFC 3986 resolved it relative to domain root (`https://api.groq.com/chat/completions`), stripping the `/openai/v1` path prefix. Fixed by configuring the exact full endpoint URL on the client, preventing path stripping.
