@@ -35,7 +35,8 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path.equals("/health")
                 || path.startsWith("/actuator")
-                || path.startsWith("/admin");
+                || path.startsWith("/admin")
+                || (path.equals("/usage") && request.getParameter("key") != null);
     }
 
     @Override
