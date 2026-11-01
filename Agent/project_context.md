@@ -73,4 +73,4 @@ OpenAI's schema, which provider(s), mock vs real fallback, whether to cache, whe
 
 ## Progress (update ONLY after I approve a step)
 - [x] 1  - [x] 2  - [x] 3  - [x] 4  - [x] 5  - [x] 6
-- [x] 7  - [ ] 8  - [ ] 9  - [ ] 10 - [ ] 11
+- [x] 7  - [x] 8  - [x] 9  - [x] 10 - [ ] 11
