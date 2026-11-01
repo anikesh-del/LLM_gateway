@@ -35,7 +35,7 @@ services:
       - key: PRIMARY_PROVIDER_BASE_URL
         value: https://api.groq.com/openai/v1
       - key: PRIMARY_MODEL
-        value: llama-3.1-8b-instant
+        value: openai/gpt-oss-20b
       - key: FALLBACK_PROVIDER_API_KEY
         sync: false
       - key: FALLBACK_PROVIDER_BASE_URL

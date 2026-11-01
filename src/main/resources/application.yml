@@ -29,7 +29,7 @@ gateway:
     primary:
       base-url: ${PRIMARY_PROVIDER_BASE_URL:https://api.groq.com/openai/v1}
       api-key: ${PRIMARY_PROVIDER_API_KEY:}
-      model: ${PRIMARY_MODEL:llama-3.1-8b-instant}
+      model: ${PRIMARY_MODEL:openai/gpt-oss-20b}
     fallback:
       base-url: ${FALLBACK_PROVIDER_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
       api-key: ${FALLBACK_PROVIDER_API_KEY:}
