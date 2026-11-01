@@ -1,0 +1,22 @@
+# Ignore environment variables and secrets (CRITICAL: NEVER BAKE SECRETS INTO DOCKER IMAGES)
+.env
+*.env
+!.env.example
+
+# Ignore version control
+.git
+.gitignore
+
+# Ignore build artifacts and IDE files
+target/
+*.class
+*.jar
+.idea/
+*.iml
+.vscode/
+
+# Ignore documentation & agent notes
+Agent/
+docs/
+*.log
+

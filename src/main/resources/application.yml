@@ -24,6 +24,49 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+gateway:
+  providers:
+    primary:
+      base-url: ${PRIMARY_PROVIDER_BASE_URL:https://api.groq.com/openai/v1}
+      api-key: ${PRIMARY_PROVIDER_API_KEY:}
+      model: ${PRIMARY_MODEL:llama-3.1-8b-instant}
+    fallback:
+      base-url: ${FALLBACK_PROVIDER_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
+      api-key: ${FALLBACK_PROVIDER_API_KEY:}
+      model: ${FALLBACK_MODEL:gemini-1.5-flash}
+  budget:
+    usd-to-inr: ${USD_INR:84.00}
+    default-max-tokens: ${DEFAULT_MAX_TOKENS:512}
+    max-tokens-ceiling: ${MAX_TOKENS_CEILING:4096}
+    primary-model: ${PRIMARY_MODEL:llama-3.1-8b-instant}
+    fallback-model: ${FALLBACK_MODEL:gemini-1.5-flash}
+  pricing:
+    models:
+      llama-3.1-8b-instant:
+        input-per-million-usd: 0.05
+        output-per-million-usd: 0.08
+      llama-3.3-70b-versatile:
+        input-per-million-usd: 0.59
+        output-per-million-usd: 0.79
+      openai/gpt-oss-20b:
+        input-per-million-usd: 0.10
+        output-per-million-usd: 0.20
+      gemini-1.5-flash:
+        input-per-million-usd: 0.075
+        output-per-million-usd: 0.30
+      gemini-2.0-flash:
+        input-per-million-usd: 0.10
+        output-per-million-usd: 0.40
+      gemini-3.8-flash:
+        input-per-million-usd: 0.10
+        output-per-million-usd: 0.40
+      gpt-4o-mini:
+        input-per-million-usd: 0.15
+        output-per-million-usd: 0.60
+      default:
+        input-per-million-usd: 0.50
+        output-per-million-usd: 1.50
+
 management:
   endpoints:
     web:
@@ -32,4 +75,3 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-

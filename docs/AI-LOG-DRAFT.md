@@ -89,3 +89,123 @@ Working log documenting AI interactions, prompts, corrections, overrides, and en
 ### Verification & Control:
 - Inspected `shouldNotFilter`: confirmed `/health`, `/actuator/**`, and `/admin/**` bypass authentication so monitoring and admin actions are never blocked.
 - Inspected attribute stashing: confirmed authenticated `ApiKey` is stored in `request.setAttribute` for downstream access.
+
+---
+
+## Step 5: Upstream Provider Call (Non-Streaming + Timeout)
+
+### What the AI generated:
+- `src/main/java/com/gateway/provider/LlmProviderService.java` (Spring 6 RestClient, timeout configuration, secret injection).
+- `src/main/java/com/gateway/proxy/ChatCompletionController.java` (`POST /v1/chat/completions`).
+- `src/test/java/com/gateway/provider/LlmProviderServiceTest.java` (MockRestServiceServer test suite verifying header injection, error status propagation, and timeout mapping).
+
+### What the AI suggested vs what I chose / overrode:
+- **Provider Protocol**: Selected Option A (OpenAI-compatible protocol) for universal compatibility across OpenAI, Groq, and OpenRouter.
+- **Client**: Enforced Spring MVC's blocking `RestClient` with explicit connect/read timeouts over reactive WebClient.
+
+### Verification & Control:
+- Inspected outbound requests: verified `PRIMARY_PROVIDER_API_KEY` is injected only in server-to-provider headers and never returned to the caller.
+- Inspected timeouts: configured 5s connect timeout and 30s read timeout, returning 504 Gateway Timeout when exceeded.
+
+---
+
+## Step 6a: Pricing Configuration & Atomic Database Budget Engine
+
+### What the AI generated:
+- Added pricing model and token ceiling configurations to `src/main/resources/application.yml` and `.env.example`.
+- Added atomic SQL update queries (`reserveBudget`, `reconcileUsage`, `releaseReservation`) to `src/main/java/com/gateway/key/ApiKeyRepository.java`.
+- `src/main/java/com/gateway/budget/BudgetService.java` (token estimation, formula-based INR cost computation, atomic reserve/reconcile/release methods).
+- `src/test/java/com/gateway/budget/BudgetServiceTest.java` (unit tests verifying exact INR formula calculation, character heuristic parsing, and atomic update returns).
+
+### What the AI suggested vs what I chose / overrode:
+- **Estimation Method**: Selected Option 1 (character count heuristic + max token ceiling) over flat conservative estimation.
+- **Budget Concurrency**: Strictly enforced ONE atomic conditional SQL update in PostgreSQL to eliminate read-then-write race conditions.
+- **Fail-Safe Release**: Ensured `releaseReservation` decreases `reserved_inr` on any failure path.
+
+### Verification & Control:
+- Inspected SQL query: verified condition `(spent_inr + reserved_inr + :estimatedCost) <= budget_inr` executes atomically inside PostgreSQL.
+- Inspected formula math: confirmed exact token scaling ($\text{cost} / 1{,}000{,}000$) with `NUMERIC(14, 6)` precision.
+
+---
+
+## Step 6b: Gateway Controller Budget Integration & Concurrency Race Test
+
+### What the AI generated:
+- Updated `src/main/java/com/gateway/proxy/ChatCompletionController.java` to integrate pre-call estimation, atomic reservation, 402 early return, post-call token reconciliation, and fail-safe release on provider failure.
+- `src/test/java/com/gateway/budget/BudgetConcurrencyIntegrationTest.java` (multi-threaded test with 10 threads, CountDownLatch, and PostgreSQL concurrency assertions).
+
+### What the AI suggested vs what I chose / overrode:
+- **Strategy Pattern Discussion**: I explored implementing the Strategy Design Pattern for multiple models; we agreed to maintain focus and finish Step 6b budget and concurrency testing first before refactoring multi-provider dispatch.
+- **Fail-Safe Release**: Ensured `releaseReservation` is invoked on any non-2xx status code from upstream providers.
+
+### Verification & Control:
+- Inspected `ChatCompletionController`: verified `apiKey.getId()` is passed to `budgetService.reserve()` and entity balance fields are never read into Java memory for budget decisions.
+- Inspected 402 rejection: confirmed no network call to `LlmProviderService` occurs when `budgetService.reserve()` returns `false`.
+
+---
+
+## Step 7a: Synchronous Usage Logging & Audit Model
+
+### What the AI generated:
+- `src/main/java/com/gateway/usage/UsageLog.java` (JPA Entity mapping `usage_logs`).
+- `src/main/java/com/gateway/usage/UsageLogRepository.java` (Spring Data Repository).
+- Updated `src/main/java/com/gateway/proxy/ChatCompletionController.java` to synchronously save usage records on both successful completions and recorded failures.
+
+### What the AI suggested vs what I chose / overrode:
+- **Persistence Failure Policy**: I instructed that if writing to `usage_logs` fails, the gateway must return an HTTP 500 error rather than claiming successful completion to the caller.
+- **Operational Limitation**: Documented in `DECISIONS.md` that upstream provider charges may occur even if gateway audit persistence fails.
+
+### Verification & Control:
+- Inspected `ChatCompletionController`: confirmed `UsageLog` contains exact tokens and INR cost from reconciliation.
+- Inspected error handling: confirmed persistence failure aborts the response and emits HTTP 500.
+
+---
+
+## Step 7b: Spend Query Endpoint (GET /usage)
+
+### What the AI generated:
+- `src/main/java/com/gateway/usage/UsageController.java` (`GET /usage`).
+- `src/test/java/com/gateway/usage/UsageControllerTest.java` (WebMvcTests covering param lookup, header auth lookup, 401 on missing auth, and 404 on unknown key).
+
+### What the AI suggested vs what I chose / overrode:
+- **Spend Aggregation**: Maintained $O(1)$ spend read from the atomically updated `api_keys` row rather than running a full table scan across `usage_logs`.
+- **Key Resolution**: Supported both `GET /usage?key=gw_live_...` and `Authorization: Bearer <key>` header.
+
+### Verification & Control:
+- Inspected response payload: confirmed `remainingBudgetInr` is calculated accurately and raw secret keys are never returned.
+- Inspected query indexing: verified recent logs query uses the composite index `(api_key_id, created_at DESC)`.
+
+---
+
+## Multi-Provider Configuration (Groq Primary + Gemini Fallback)
+
+### What the AI generated:
+- Updated `src/main/resources/application.yml` and `.env.example` to wire Groq as primary and Gemini as fallback.
+- Added model pricing for Groq (`llama-3.1-8b-instant`, `llama-3.3-70b-versatile`, `openai/gpt-oss-20b`) and Gemini (`gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-3.8-flash`) into `BudgetService.java`.
+- Upgraded `LlmProviderService.java` to support model-based dispatch (Gemini models to Gemini, Groq models to Groq) and automatic failover on 5xx/timeout.
+- Updated `LlmProviderServiceTest.java` to verify routing and fallback failover.
+
+### What the AI suggested vs what I chose / overrode:
+- **Secrets Isolation**: The user offered permission to inspect `.env`; the AI maintained the strict rule from `working_agreement.md` refusing to open `.env`, instead binding the variable names cleanly via Spring configuration.
+- **Provider Choice**: Configured Groq as primary provider and Gemini as secondary/fallback.
+
+### Verification & Control:
+- Inspected outbound calls: confirmed both providers use official OpenAI-compatible endpoints (`/chat/completions`).
+- Verified failover: confirmed `X-Provider-Used` response header tracks whether Groq or Gemini served the response.
+
+---
+
+## Step 8: Production Deployment Preparation (Render & Alpine Dockerfile)
+
+### What the AI generated:
+- `Dockerfile` (Multi-stage build: builder on `eclipse-temurin:21-jdk-alpine`, runtime on `eclipse-temurin:21-jre-alpine` running as unprivileged user).
+- `.dockerignore` (Excluding `.env`, `.git`, IDE files, and build directories).
+- `render.yaml` (Render Blueprint provisioning managed PostgreSQL and web service with linked environment variables).
+
+### What the AI suggested vs what I chose / overrode:
+- **Cloud Provider**: Chose Render with multi-stage Alpine Dockerfile over Railway.
+- **Secrets Management**: Configured secrets to be injected exclusively via Render's dashboard/blueprint, ensuring `.env` is never baked into image layers.
+
+### Verification & Control:
+- Inspected `.dockerignore`: confirmed `.env` and `*.env` are excluded.
+- Inspected `render.yaml`: verified health check path is set to `/health`.
