@@ -1,26 +1,21 @@
 # ==========================================
-# Stage 1: Build Application with Maven Wrapper
+# Stage 1: Build Application with Pre-installed Maven
 # ==========================================
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /build
 
-# Copy Maven Wrapper and POM first to leverage Docker layer caching
-COPY mvnw mvnw
-COPY .mvn .mvn
-COPY pom.xml pom.xml
-
-# Ensure POSIX line endings and executable permission on mvnw
-RUN chmod +x mvnw
+# Copy POM first to leverage Docker layer caching
+COPY pom.xml .
 
 # Copy application source code
 COPY src src
 
 # Package the runnable fat JAR
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests -B
 
 # ==========================================
-# Stage 2: Minimal Production Runtime
+# Stage 2: Minimal Production Runtime (~180MB)
 # ==========================================
 FROM eclipse-temurin:21-jre-alpine
 
@@ -39,4 +34,3 @@ EXPOSE 8080
 
 # Production JVM flags with container memory awareness
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
-

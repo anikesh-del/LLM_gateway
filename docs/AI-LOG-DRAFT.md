@@ -209,3 +209,5 @@ Working log documenting AI interactions, prompts, corrections, overrides, and en
 ### Verification & Control:
 - Inspected `.dockerignore`: confirmed `.env` and `*.env` are excluded.
 - Inspected `render.yaml`: verified health check path is set to `/health`.
+
+- **Docker Build Fix (Exit Code 127)**: Resolved `exit code: 127` during Docker build caused by Windows CRLF line endings on `mvnw` and missing `curl`/`unzip` packages in raw Alpine images by switching the builder stage to `maven:3.9.9-eclipse-temurin-21-alpine`. This executes pre-installed Maven directly without wrapper overhead while keeping the runtime image minimal (`eclipse-temurin:21-jre-alpine`).
